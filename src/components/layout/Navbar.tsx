@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, Gavel, Sparkles, Flame, HelpCircle, Users, ArrowRight, User, Scale, LogIn } from "lucide-react";
+import { Menu, X, Gavel, Sparkles, Flame, HelpCircle, Users, ArrowRight, User, Scale, LogIn, LogOut } from "lucide-react";
 import { Button } from "../ui/Button";
 import { useUser } from "@/context/UserContext";
 import { useAuth } from "@/context/AuthContext";
@@ -21,7 +21,7 @@ export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
   const { userName, openOnboarding } = useUser();
-  const { user: authUser, triggerAuth } = useAuth();
+  const { user: authUser, triggerAuth, logout } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -94,18 +94,28 @@ export function Navbar() {
         {/* Right: Desktop Actions & User Badges */}
         <div className="hidden md:flex items-center gap-2.5">
           {authUser ? (
-            <Link
-              href="/my-polls"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-amber-400 hover:border-amber-500/50 text-xs font-mono transition-colors"
-              title="My Courtroom Docket"
-            >
-              <Scale className="w-3.5 h-3.5 text-amber-500" />
-              <span className="font-bold max-w-[90px] truncate">{authUser.name}</span>
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                href="/my-polls"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-amber-400 hover:border-amber-500/50 text-xs font-mono transition-colors"
+                title="My Courtroom Docket"
+              >
+                <Scale className="w-3.5 h-3.5 text-amber-500" />
+                <span className="font-bold max-w-[90px] truncate">{authUser.name}</span>
+              </Link>
+              <button
+                onClick={logout}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-red-400 hover:border-red-900/50 text-xs font-mono transition-colors cursor-pointer"
+                title="Log Out"
+              >
+                <LogOut className="w-3.5 h-3.5 text-zinc-500" />
+                <span>Log Out</span>
+              </button>
+            </div>
           ) : (
             <button
               onClick={() => triggerAuth()}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:border-zinc-700 text-xs font-mono transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:border-zinc-700 text-xs font-mono transition-colors cursor-pointer"
             >
               <LogIn className="w-3.5 h-3.5 text-red-500" />
               <span>Jury Sign In</span>
@@ -162,6 +172,47 @@ export function Navbar() {
                 </Link>
               );
             })}
+            
+            {/* Mobile Auth and Guest Status */}
+            <div className="pt-2 flex flex-col gap-2">
+              {authUser ? (
+                <div className="flex gap-2">
+                  <Link
+                    href="/my-polls"
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-amber-400 text-xs font-semibold font-mono"
+                  >
+                    <Scale className="w-4 h-4 text-amber-500" />
+                    <span className="truncate">{authUser.name}</span>
+                  </Link>
+                  <button
+                    onClick={logout}
+                    className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-zinc-900/60 border border-zinc-800/80 text-zinc-400 hover:text-red-400 text-xs font-mono cursor-pointer"
+                  >
+                    <LogOut className="w-4 h-4 text-zinc-500" />
+                    <span>Log Out</span>
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => triggerAuth()}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white text-xs font-mono cursor-pointer"
+                >
+                  <LogIn className="w-4 h-4 text-red-500" />
+                  <span>Jury Sign In</span>
+                </button>
+              )}
+
+              {userName && (
+                <button
+                  onClick={openOnboarding}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white text-xs font-mono cursor-pointer"
+                >
+                  <User className="w-4 h-4 text-red-500" />
+                  <span className="truncate">Alias: {userName}</span>
+                </button>
+              )}
+            </div>
+
             <div className="pt-3 border-t border-zinc-800/80">
               <Button href="/judge" variant="primary" size="lg" className="w-full justify-center">
                 GET JUDGED <ArrowRight className="w-5 h-5 ml-2" />
