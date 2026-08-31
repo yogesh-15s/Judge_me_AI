@@ -2,22 +2,67 @@
 
 import React, { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { Button } from "./Button";
-import { Scale, Lock, ShieldCheck, X } from "lucide-react";
+import { useGoogleLogin, GoogleLogin } from "@react-oauth/google";
+import { Scale, Lock, X, AlertCircle, Info } from "lucide-react";
 
 export function AuthModal() {
-  const { showAuthModal, setShowAuthModal, signInWithGoogle } = useAuth();
+  const { showAuthModal, setShowAuthModal, setUserFromGoogleProfile, googleClientId } = useAuth();
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  const isConfigured = googleClientId && !googleClientId.includes("YOUR_GOOGLE_CLIENT_ID") && googleClientId.trim().length > 10;
+
+  // Hook for Strict Google Login Popup
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setIsSigningIn(true);
+      setAuthError(null);
+      try {
+        const response = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+          headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+        });
+        const profile = await response.json();
+        
+        if (profile && profile.email) {
+          setUserFromGoogleProfile({
+            id: profile.sub,
+            email: profile.email,
+            name: profile.name,
+            picture: profile.picture,
+          });
+        } else {
+          setAuthError("Failed to retrieve profile from Google. Please try again.");
+        }
+      } catch (error) {
+        console.error("Failed to fetch Google profile info:", error);
+        setAuthError("Network error verifying Google credentials.");
+      } finally {
+        setIsSigningIn(false);
+      }
+    },
+    onError: (errorResponse) => {
+      console.warn("Google Login error:", errorResponse);
+      setIsSigningIn(false);
+      setAuthError("Google sign-in was cancelled, blocked, or failed. Check Google Cloud origin settings.");
+    },
+  });
 
   if (!showAuthModal) return null;
 
-  const handleGoogleAuth = async () => {
+  const handleGoogleAuth = () => {
+    if (!isConfigured) {
+      setAuthError("Please put your real Google Client ID in .env.local and restart 'npm run dev'.");
+      return;
+    }
     setIsSigningIn(true);
-    // Simulate brief Google OAuth handshake delay
-    setTimeout(async () => {
-      await signInWithGoogle();
+    setAuthError(null);
+    try {
+      googleLogin();
+    } catch (err) {
+      console.error("Google login trigger error:", err);
       setIsSigningIn(false);
-    }, 600);
+      setAuthError("Unable to open Google popup. Please allow popups or use the official Google button below.");
+    }
   };
 
   return (
@@ -29,7 +74,10 @@ export function AuthModal() {
       <div className="relative w-full max-w-md bg-zinc-900 border-2 border-red-600/70 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 text-center overflow-hidden">
         {/* Close button */}
         <button
-          onClick={() => setShowAuthModal(false)}
+          onClick={() => {
+            setShowAuthModal(false);
+            setAuthError(null);
+          }}
           className="absolute top-4 right-4 p-2 text-zinc-400 hover:text-white rounded-full bg-zinc-950/80 border border-zinc-800 transition-colors"
         >
           <X className="w-4 h-4" />
@@ -46,16 +94,38 @@ export function AuthModal() {
             THE COURT REQUIRES YOUR <span className="text-red-600">VERDICT</span>
           </h2>
           <p className="text-xs sm:text-sm text-zinc-400 font-medium max-w-sm mx-auto leading-relaxed">
-            Sign in to cast your vote. Your identity will be 100% hidden from the public.
+            Sign in with Google to cast your vote as a juror. Your identity remains 100% anonymous.
           </p>
         </div>
 
-        {/* Continue with Google Action */}
+        {/* Unconfigured Notice */}
+        {!isConfigured && (
+          <div className="flex items-start gap-2.5 p-3.5 bg-amber-950/70 border border-amber-800/80 rounded-xl text-amber-300 text-xs font-mono text-left">
+            <Info className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="font-bold">Google Client ID Action Required:</p>
+              <p className="text-[11px] text-amber-200/90 leading-tight">
+                Paste your Client ID into <code className="bg-zinc-950 px-1 py-0.5 rounded text-white font-mono">.env.local</code> as <code className="bg-zinc-950 px-1 py-0.5 rounded text-amber-300 font-mono">NEXT_PUBLIC_GOOGLE_CLIENT_ID</code>, then restart <code className="bg-zinc-950 px-1 py-0.5 rounded text-white font-mono">npm run dev</code>.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Error Alert if any */}
+        {authError && (
+          <div className="flex items-center gap-2 p-3 bg-red-950/80 border border-red-800 rounded-xl text-red-300 text-xs font-mono text-left animate-in fade-in duration-150">
+            <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+            <span>{authError}</span>
+          </div>
+        )}
+
+        {/* Actions Container */}
         <div className="space-y-3 pt-2">
+          {/* Custom Google Button */}
           <button
             onClick={handleGoogleAuth}
             disabled={isSigningIn}
-            className="w-full flex items-center justify-center gap-3 bg-white hover:bg-zinc-100 text-zinc-950 font-black text-sm px-6 py-4 rounded-xl shadow-xl transition-all duration-200 active:scale-[0.98] border border-zinc-300 disabled:opacity-70"
+            className="w-full flex items-center justify-center gap-3 bg-white hover:bg-zinc-100 text-zinc-950 font-black text-sm px-6 py-4 rounded-xl shadow-xl transition-all duration-200 active:scale-[0.98] border border-zinc-300 disabled:opacity-70 cursor-pointer"
           >
             {/* Google Logo SVG */}
             <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -76,8 +146,40 @@ export function AuthModal() {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
               />
             </svg>
-            <span>{isSigningIn ? "VERIFYING CREDENTIALS..." : "Continue with Google"}</span>
+            <span>{isSigningIn ? "OPENING GOOGLE SIGN IN..." : "Sign in with Google"}</span>
           </button>
+
+          {/* Fallback Official Google Button if custom trigger fails */}
+          {isConfigured && (
+            <div className="flex justify-center pt-2">
+              <GoogleLogin
+                onSuccess={async (credentialResponse) => {
+                  if (credentialResponse.credential) {
+                    try {
+                      // Decode JWT payload or fetch userinfo
+                      const res = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${credentialResponse.credential}`);
+                      const profile = await res.json();
+                      if (profile && profile.email) {
+                        setUserFromGoogleProfile({
+                          id: profile.sub,
+                          email: profile.email,
+                          name: profile.name,
+                          picture: profile.picture,
+                        });
+                      }
+                    } catch (e) {
+                      console.error(e);
+                    }
+                  }
+                }}
+                onError={() => {
+                  setAuthError("Google Sign-In failed.");
+                }}
+                theme="filled_black"
+                shape="pill"
+              />
+            </div>
+          )}
         </div>
 
         {/* Privacy Lock Note */}
@@ -89,3 +191,6 @@ export function AuthModal() {
     </div>
   );
 }
+
+
+

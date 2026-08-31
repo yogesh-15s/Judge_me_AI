@@ -50,10 +50,7 @@ export function CreatePollForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!isAuthenticated || !user) {
-      triggerAuth(() => handleSubmit(e));
-      return;
-    }
+    const creatorId = user?.id || `usr_anon_${Math.random().toString(36).substring(2, 9)}`;
 
     if (!question.trim() || question.trim().length < 5) {
       setErrorMessage("Please enter a valid question (at least 5 characters).");
@@ -78,7 +75,7 @@ export function CreatePollForm() {
           description: description.trim(),
           category,
           optionTexts: cleanOptions,
-          userId: user.id,
+          userId: creatorId,
         }),
       });
 
