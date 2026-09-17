@@ -115,9 +115,9 @@ const initialPolls: Poll[] = [
 ];
 
 // Persistent stores in memory for MVP state
-let pollsStore: Poll[] = [...initialPolls];
-let votesStore: VoteRecord[] = [];
-let usersStore: UserAccount[] = [];
+const pollsStore: Poll[] = [...initialPolls];
+const votesStore: VoteRecord[] = [];
+const usersStore: UserAccount[] = [];
 
 export function getPollsStore(): Poll[] {
   return pollsStore;

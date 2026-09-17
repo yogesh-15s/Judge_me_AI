@@ -22,19 +22,19 @@ export function Button({
   ...props
 }: ButtonProps) {
   const baseStyles =
-    "inline-flex items-center justify-center font-bold tracking-wide uppercase transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-black disabled:opacity-50 disabled:pointer-events-none rounded-xl active:scale-[0.98]";
+    "inline-flex items-center justify-center font-serif font-bold tracking-wider uppercase transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-[#1a0b08] disabled:opacity-50 disabled:pointer-events-none rounded-xl active:translate-y-0.5 active:shadow-inner cursor-pointer select-none";
 
   const variantStyles = {
     primary:
-      "bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-900/30 hover:shadow-red-600/50 border border-red-500/50",
+      "bg-gradient-to-r from-[#D4AF37] via-[#F5D77F] to-[#997A15] text-[#1A0B08] font-black border border-[#F5D77F] shadow-[0_4px_15px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.6)] hover:brightness-110 hover:shadow-[0_6px_20px_rgba(212,175,55,0.4)]",
     secondary:
-      "bg-zinc-900 hover:bg-zinc-800 text-zinc-100 border border-zinc-700/60 hover:border-zinc-500",
+      "bg-[#2A120D] hover:bg-[#3D1C15] text-[#F7F2E7] border border-[#D4AF37]/40 shadow-md shadow-black/50 hover:border-[#D4AF37]",
     outline:
-      "bg-transparent hover:bg-red-950/40 text-red-400 hover:text-red-300 border-2 border-red-600/60 hover:border-red-500",
+      "bg-transparent hover:bg-[#D4AF37]/15 text-[#F5D77F] hover:text-white border-2 border-[#D4AF37] shadow-sm",
     ghost:
-      "bg-transparent hover:bg-zinc-800/60 text-zinc-300 hover:text-white border border-transparent",
+      "bg-transparent hover:bg-[#3D1C15]/60 text-[#EDE2CE] hover:text-white border border-transparent",
     gold:
-      "bg-amber-500 hover:bg-amber-400 text-zinc-950 font-black shadow-lg shadow-amber-500/20 border border-amber-400/50",
+      "bg-gradient-to-r from-[#F5D77F] via-[#D4AF37] to-[#997A15] text-[#1A0B08] font-black shadow-lg shadow-[#D4AF37]/30 border border-[#F5D77F]",
   };
 
   const sizeStyles = {

@@ -1,15 +1,23 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, JetBrains_Mono, Permanent_Marker } from "next/font/google";
+import { Playfair_Display, Courier_Prime, Permanent_Marker, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { UserProvider } from "@/context/UserContext";
 import { AuthProvider } from "@/context/AuthContext";
+import { ThemeProvider } from "@/context/ThemeContext";
+import { SoundProvider } from "@/context/SoundContext";
 import { OnboardingModal } from "@/components/ui/OnboardingModal";
 import { AuthModal } from "@/components/ui/AuthModal";
 
-const jakartaSans = Plus_Jakarta_Sans({
-  variable: "--font-sans",
+const playfairDisplay = Playfair_Display({
+  variable: "--font-serif",
+  subsets: ["latin"],
+});
+
+const courierPrime = Courier_Prime({
+  weight: ["400", "700"],
+  variable: "--font-typewriter",
   subsets: ["latin"],
 });
 
@@ -20,14 +28,14 @@ const jetbrainsMono = JetBrains_Mono({
 
 const permanentMarker = Permanent_Marker({
   weight: "400",
-  variable: "--font-marker",
+  variable: "--font-stamp",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "JUDGE ME ⚖ — Give us something. We'll judge it.",
+  title: "JUDGE ME AI ⚖ — Court of Public Opinion",
   description:
-    "The internet's ultimate AI-powered courtroom. Submit photos, bios, outfits, dating profiles, or questionable choices and receive dramatic, funny AI judgments.",
+    "The internet's ultimate AI-powered courtroom. Submit exhibits, bios, outfits, or questionable choices to face the supreme AI Bench.",
 };
 
 export default function RootLayout({
@@ -38,22 +46,24 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${jakartaSans.variable} ${jetbrainsMono.variable} ${permanentMarker.variable} h-full antialiased dark`}
+      data-theme="crimson"
+      className={`${playfairDisplay.variable} ${courierPrime.variable} ${jetbrainsMono.variable} ${permanentMarker.variable} h-full antialiased dark`}
     >
-      <body className="min-h-full flex flex-col bg-zinc-950 text-zinc-100 selection:bg-red-600 selection:text-white">
-        <AuthProvider>
-          <UserProvider>
-            <OnboardingModal />
-            <AuthModal />
-            <Navbar />
-            <div className="flex-1">{children}</div>
-            <Footer />
-          </UserProvider>
-        </AuthProvider>
+      <body className="min-h-full flex flex-col selection:bg-red-600 selection:text-white">
+        <ThemeProvider>
+          <SoundProvider>
+            <AuthProvider>
+              <UserProvider>
+                <OnboardingModal />
+                <AuthModal />
+                <Navbar />
+                <div className="flex-1">{children}</div>
+                <Footer />
+              </UserProvider>
+            </AuthProvider>
+          </SoundProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
 }
-
-
-

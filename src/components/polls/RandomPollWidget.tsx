@@ -10,10 +10,6 @@ export function RandomPollWidget() {
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  useEffect(() => {
-    fetchPolls();
-  }, []);
-
   const fetchPolls = async () => {
     setIsLoading(true);
     try {
@@ -29,6 +25,10 @@ export function RandomPollWidget() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchPolls();
+  }, []);
 
   const handleNextQuestion = () => {
     if (polls.length === 0) return;

@@ -1,150 +1,316 @@
 @import "tailwindcss";
 
+@theme {
+  --color-mahogany-950: #1a0b08;
+  --color-mahogany-900: #2a120d;
+  --color-mahogany-800: #3d1c15;
+  --color-mahogany-700: #54271d;
+
+  --color-felt-dark: #0b2016;
+  --color-felt: #0f2f21;
+  --color-felt-light: #164330;
+
+  --color-parchment-light: #fdfbf7;
+  --color-parchment: #f7f2e7;
+  --color-parchment-dark: #ede2ce;
+  --color-manila: #f4e8cc;
+  --color-manila-tab: #e5d4ab;
+
+  --color-ink-dark: #2c261e;
+  --color-ink-muted: #5c5245;
+
+  --color-brass-dark: #997a15;
+  --color-brass: #d4af37;
+  --color-brass-light: #f5d77f;
+
+  --color-stamp-crimson: #991b1b;
+  --color-stamp-navy: #1e3a8a;
+
+  --font-serif: var(--font-serif), 'Playfair Display', Georgia, serif;
+  --font-typewriter: var(--font-typewriter), 'Courier Prime', monospace;
+  --font-stamp: var(--font-stamp), 'Permanent Marker', cursive;
+}
+
 @layer base {
   :root {
-    --background: #08080a;
-    --foreground: #f8fafc;
-    --card: #121216;
-    --card-foreground: #f8fafc;
-    --popover: #121216;
-    --popover-foreground: #f8fafc;
-    --primary: #ef4444;
-    --primary-foreground: #ffffff;
-    --secondary: #1f1f24;
-    --secondary-foreground: #e2e8f0;
-    --muted: #18181c;
-    --muted-foreground: #94a3b8;
-    --accent: #dc2626;
-    --accent-gold: #eab308;
-    --accent-foreground: #ffffff;
+    --color-bg: #1a0b08;
+    --color-bg-elevated: #2a120d;
+    --color-accent: #d4af37;
+    --color-accent-glow: #f5d77f;
+    --color-accent-muted: #997a15;
+    --color-text-primary: #f7f2e7;
+    --color-text-secondary: #c4b69c;
+    --color-warning: #d4af37;
+    --color-success: #164330;
+
+    --font-serif: var(--font-serif), 'Playfair Display', Georgia, serif;
+    --font-typewriter: var(--font-typewriter), 'Courier Prime', monospace;
+    --font-stamp: var(--font-stamp), 'Permanent Marker', cursive;
+    --font-mono: var(--font-mono), 'JetBrains Mono', monospace;
+
+    /* Backwards compatibility */
+    --background: var(--color-bg);
+    --foreground: var(--color-text-primary);
+    --card: var(--color-bg-elevated);
+    --card-foreground: var(--color-text-primary);
+    --popover: var(--color-bg-elevated);
+    --popover-foreground: var(--color-text-primary);
+    --primary: var(--color-accent);
+    --primary-foreground: #1a0b08;
+    --secondary: #2a120d;
+    --secondary-foreground: #f7f2e7;
+    --muted: #1a0b08;
+    --muted-foreground: var(--color-text-secondary);
+    --accent: var(--color-accent);
+    --accent-gold: #d4af37;
+    --accent-foreground: #1a0b08;
     --destructive: #991b1b;
     --destructive-foreground: #ffffff;
-    --border: #27272a;
-    --input: #27272a;
-    --ring: #ef4444;
+    --border: #3d1c15;
+    --input: #2a120d;
+    --ring: var(--color-accent);
+  }
+
+  [data-theme="crimson"] {
+    --color-bg: #1a0b08;
+    --color-bg-elevated: #2a120d;
+    --color-accent: #d4af37;
+    --color-accent-glow: #f5d77f;
+    --color-accent-muted: #997a15;
+  }
+
+  [data-theme="neon"] {
+    --color-bg: #0b1f17;
+    --color-bg-elevated: #0f2f21;
+    --color-accent: #d4af37;
+    --color-accent-glow: #f5d77f;
+    --color-accent-muted: #164330;
+  }
+
+  [data-theme="gold"] {
+    --color-bg: #1a0b08;
+    --color-bg-elevated: #2a120d;
+    --color-accent: #f5d77f;
+    --color-accent-glow: #ffffff;
+    --color-accent-muted: #d4af37;
   }
 }
 
 body {
-  background-color: #08080a;
-  color: #f8fafc;
-  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  background-color: #1a0b08;
+  color: #f7f2e7;
+  font-family: var(--font-serif), Georgia, serif;
   overflow-x: hidden;
+  transition: background-color 0.4s ease, color 0.4s ease;
 }
 
-.font-marker {
-  font-family: var(--font-marker), cursive;
+.font-serif {
+  font-family: var(--font-serif), Georgia, serif;
 }
 
+.font-typewriter {
+  font-family: var(--font-typewriter), 'Courier Prime', monospace;
+}
 
-/* Custom dark grid background */
-.bg-court-grid {
-  background-size: 32px 32px;
+.font-stamp {
+  font-family: var(--font-stamp), 'Permanent Marker', cursive;
+}
+
+.font-mono {
+  font-family: var(--font-mono), monospace;
+}
+
+/* Authentic Dark Mahogany Wood Panel & Wainscoting Background */
+.bg-court-grid,
+.bg-mahogany-panel {
+  background-color: #1a0b08;
   background-image: 
-    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    radial-gradient(ellipse at 50% 10%, rgba(212, 175, 55, 0.12) 0%, transparent 60%),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.45) 0%, rgba(61, 28, 21, 0.2) 20%, rgba(0, 0, 0, 0.1) 50%, rgba(61, 28, 21, 0.2) 80%, rgba(0, 0, 0, 0.45) 100%),
+    repeating-linear-gradient(90deg, #1a0b08 0px, #2a120d 40px, #1c0c09 80px, #3d1c15 82px, #1a0b08 120px);
+  box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.85);
 }
 
-.bg-radial-crimson {
-  background: radial-gradient(circle at 50% 20%, rgba(239, 68, 68, 0.15) 0%, rgba(8, 8, 10, 0) 70%);
+/* Deep Judicial Felt & Banker's Desk Green */
+.bg-judicial-felt {
+  background-color: #0b2016;
+  background-image: 
+    radial-gradient(circle at 50% 30%, #164330 0%, #0f2f21 50%, #0b2016 100%),
+    repeating-radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.015) 0, rgba(255, 255, 255, 0.015) 1px, transparent 1px, transparent 3px);
+  box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.7);
 }
 
-.bg-radial-spotlight {
-  background: radial-gradient(ellipse at top, rgba(220, 38, 38, 0.2) 0%, rgba(8, 8, 10, 0.8) 60%, #08080a 100%);
+/* Vignette Ambient Shadow */
+.courtroom-vignette {
+  position: relative;
+}
+.courtroom-vignette::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 40;
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(10, 4, 3, 0.75) 100%);
 }
 
-/* Red Glow Effects */
-.glow-red {
-  box-shadow: 0 0 25px -5px rgba(239, 68, 68, 0.5);
+/* Manila Legal Dossier Folder */
+.dossier-folder {
+  background-color: #f4e8cc;
+  color: #2c261e;
+  border-radius: 4px 16px 12px 12px;
+  box-shadow: 
+    0 20px 40px -10px rgba(0, 0, 0, 0.7),
+    0 4px 12px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  position: relative;
 }
 
-.glow-red-lg {
-  box-shadow: 0 0 50px -10px rgba(239, 68, 68, 0.4);
+.dossier-tab {
+  background-color: #e5d4ab;
+  color: #2c261e;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 16px;
+  box-shadow: 0 -3px 8px rgba(0, 0, 0, 0.2);
 }
 
-.glow-gold {
-  box-shadow: 0 0 25px -5px rgba(234, 179, 8, 0.4);
+/* Off-White Aged Parchment Sheet */
+.parchment-sheet {
+  background-color: #fdfbf7;
+  color: #2c261e;
+  background-image: radial-gradient(#ede2ce 1px, transparent 1px);
+  background-size: 24px 24px;
+  border: 1px solid #e2d3b5;
+  box-shadow: 
+    0 10px 30px rgba(0, 0, 0, 0.5),
+    0 2px 6px rgba(0, 0, 0, 0.3),
+    inset 0 0 20px rgba(229, 212, 171, 0.4);
 }
 
-/* Verdict Rubber Stamp Style */
-.stamp-badge {
-  display: inline-block;
-  padding: 0.25rem 0.75rem;
-  font-weight: 900;
+/* Ruled Legal Pad Paper */
+.ruled-paper {
+  background-color: #fdf8e8;
+  color: #2c261e;
+  background-image: 
+    linear-gradient(90deg, transparent 48px, #fca5a5 49px, transparent 50px),
+    linear-gradient(#e0d7c0 1px, transparent 1px);
+  background-size: 100% 100%, 100% 28px;
+  line-height: 28px;
+  box-shadow: inset 0 0 15px rgba(200, 180, 140, 0.25);
+}
+
+/* Polished & Burnished Brass Metal Buttons & Trims */
+.btn-brass {
+  background: linear-gradient(135deg, #f5d77f 0%, #d4af37 50%, #997a15 100%);
+  color: #1a0b08;
+  font-family: var(--font-serif), Georgia, serif;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  border: 3px solid currentColor;
-  border-radius: 4px;
-  transform: rotate(-4deg);
-  box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+  letter-spacing: 0.05em;
+  border: 1px solid #f5d77f;
+  box-shadow: 
+    0 4px 15px rgba(0, 0, 0, 0.5),
+    0 1px 0 rgba(255, 255, 255, 0.5) inset,
+    0 -2px 0 rgba(0, 0, 0, 0.3) inset;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.stamp-guilty {
-  color: #ef4444;
-  border-color: #ef4444;
-  background-color: rgba(239, 68, 68, 0.1);
+.btn-brass:hover {
+  background: linear-gradient(135deg, #fff0aa 0%, #e0bd42 50%, #b3901b 100%);
+  box-shadow: 
+    0 6px 20px rgba(212, 175, 55, 0.4),
+    0 1px 0 rgba(255, 255, 255, 0.7) inset;
 }
 
-.stamp-gold {
-  color: #eab308;
-  border-color: #eab308;
-  background-color: rgba(234, 179, 8, 0.1);
-  transform: rotate(3deg);
+.btn-brass:active {
+  transform: translateY(2px);
+  box-shadow: 
+    0 2px 6px rgba(0, 0, 0, 0.6),
+    inset 0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
-.stamp-innocent {
-  color: #22c55e;
-  border-color: #22c55e;
-  background-color: rgba(34, 197, 94, 0.1);
-  transform: rotate(-2deg);
+.brass-border {
+  border: 1px solid #d4af37;
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
 }
 
-/* Animations */
-@keyframes pulseGlow {
-  0%, 100% {
-    opacity: 0.4;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.8;
-    transform: scale(1.03);
-  }
+.brass-trim {
+  border-bottom: 2px solid #d4af37;
 }
 
-.animate-pulse-glow {
-  animation: pulseGlow 4s infinite ease-in-out;
-}
-
-@keyframes stampPop {
+/* Physical Rubber Stamp Hit Animation & Styles */
+@keyframes stampHitOvershoot {
   0% {
     opacity: 0;
-    transform: scale(2.5) rotate(-15deg);
+    transform: scale(2.2) rotate(-18deg);
   }
-  70% {
-    opacity: 1;
-    transform: scale(0.9) rotate(-3deg);
+  60% {
+    opacity: 0.95;
+    transform: scale(0.94) rotate(-10deg);
+  }
+  80% {
+    transform: scale(1.05) rotate(-14deg);
   }
   100% {
-    transform: scale(1) rotate(-4deg);
+    opacity: 1;
+    transform: scale(1) rotate(-12deg);
   }
 }
 
-.animate-stamp {
-  animation: stampPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+.animate-stamp-overshoot {
+  animation: stampHitOvershoot 0.38s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
-/* Custom Scrollbar */
+/* Paper Slide Animation */
+@keyframes paperSlideDown {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px) rotate(-1deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg);
+  }
+}
+
+.animate-paper-slide {
+  animation: paperSlideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Gavel Impact Screen Shake */
+.slam-shake {
+  animation: courtShake 0.24s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes courtShake {
+  0% { transform: translate3d(0, 0, 0); }
+  15% { transform: translate3d(-5px, 7px, 0) rotate(-0.6deg); }
+  30% { transform: translate3d(6px, -5px, 0) rotate(0.5deg); }
+  50% { transform: translate3d(-4px, 4px, 0) rotate(-0.3deg); }
+  70% { transform: translate3d(2px, -2px, 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+
+/* Custom Scrollbar for Courtroom Parchment */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 10px;
 }
 ::-webkit-scrollbar-track {
-  background: #08080a;
+  background: #1a0b08;
 }
 ::-webkit-scrollbar-thumb {
-  background: #27272a;
-  border-radius: 4px;
+  background: #3d1c15;
+  border: 2px solid #1a0b08;
+  border-radius: 5px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #ef4444;
+  background: #d4af37;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .slam-shake,
+  .animate-stamp-overshoot,
+  .animate-paper-slide {
+    animation: none !important;
+    transform: none !important;
+  }
+}

@@ -1,15 +1,20 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useCallback, useId } from "react";
 import { Button } from "@/components/ui/Button";
-import { VerdictStamp } from "@/components/ui/VerdictStamp";
+import { VerdictDocument } from "@/components/ui/VerdictStamp";
+import { LoadingCopy } from "@/components/ui/LoadingCopy";
 import { useUser } from "@/context/UserContext";
+import { useSound } from "@/context/SoundContext";
+import {
+  PERSONA_CONFIGS,
+  PersonaType,
+  JudgeResponse,
+} from "@/lib/judgePersonas";
 import {
   Gavel,
   Upload,
-  Sparkles,
-  Flame,
-  AlertTriangle,
+  X,
   Camera,
   MessageSquare,
   Shirt,
@@ -18,224 +23,501 @@ import {
   FileCode,
   Smartphone,
   Brain,
-  CheckCircle2,
-  RefreshCw,
-  Share2,
+  FileText,
+  Scale,
+  ImageIcon,
+  AlertTriangle,
 } from "lucide-react";
 
+// ─── Category definitions ─────────────────────────────────────────────────────
 const categories = [
-  { id: "profile", name: "Profile", icon: Camera, emoji: "📸" },
-  { id: "bio", name: "Bio", icon: MessageSquare, emoji: "💬" },
-  { id: "outfit", name: "Outfit", icon: Shirt, emoji: "👕" },
-  { id: "music", name: "Music", icon: Music, emoji: "🎵" },
-  { id: "dating", name: "Dating", icon: Heart, emoji: "💘" },
-  { id: "resume", name: "Resume", icon: FileCode, emoji: "🧑‍💻" },
-  { id: "phone", name: "Phone", icon: Smartphone, emoji: "📱" },
+  { id: "profile", name: "Profile Exhibit", icon: Camera, emoji: "📸" },
+  { id: "bio", name: "Affidavit / Bio", icon: MessageSquare, emoji: "💬" },
+  { id: "outfit", name: "Outfit Evidence", icon: Shirt, emoji: "👕" },
+  { id: "music", name: "Audio Record", icon: Music, emoji: "🎵" },
+  { id: "dating", name: "Dating Docket", icon: Heart, emoji: "💘" },
+  { id: "resume", name: "Career Dossier", icon: FileCode, emoji: "🧑‍💻" },
+  { id: "phone", name: "Device Log", icon: Smartphone, emoji: "📱" },
   { id: "choices", name: "Life Choices", icon: Brain, emoji: "🧠" },
 ];
 
-const harshnessLevels = [
-  { id: "merciful", name: "Merciful 😇", desc: "Gentle roast with constructive feedback" },
-  { id: "honest", name: "Brutally Honest ⚖", desc: "No filter, direct courtroom truth" },
-  { id: "destroy", name: "Destroy My Spirit 🔥", desc: "Maximum emotional damage" },
-];
+// ─── Uploaded image state ─────────────────────────────────────────────────────
+interface UploadedImage {
+  id: string;
+  name: string;
+  mimeType: string;
+  base64Data: string;
+  previewUrl: string;
+}
 
-export default function JudgePage() {
-  const { userName } = useUser();
-  const [selectedCategory, setSelectedCategory] = useState("profile");
-  const [harshness, setHarshness] = useState("honest");
-  const [inputText, setInputText] = useState("");
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [verdictResult, setVerdictResult] = useState<any | null>(null);
+// ─── Persona Selector card ────────────────────────────────────────────────────
+function PersonaCard({
+  persona,
+  isActive,
+  onClick,
+}: {
+  persona: (typeof PERSONA_CONFIGS)[PersonaType];
+  isActive: boolean;
+  onClick: () => void;
+}) {
+  const borderColor =
+    persona.id === "normal"
+      ? isActive
+        ? "border-[#D4AF37] shadow-[0_0_20px_rgba(212,175,55,0.3)]"
+        : "border-[#E2D3B5]"
+      : persona.id === "sigma"
+      ? isActive
+        ? "border-[#3B82F6] shadow-[0_0_20px_rgba(59,130,246,0.35)]"
+        : "border-[#E2D3B5]"
+      : isActive
+      ? "border-[#EF4444] shadow-[0_0_20px_rgba(239,68,68,0.35)]"
+      : "border-[#E2D3B5]";
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsProcessing(true);
-    setVerdictResult(null);
+  const activeBg =
+    persona.id === "normal"
+      ? "bg-[#2A120D]"
+      : persona.id === "sigma"
+      ? "bg-[#0F172A]"
+      : "bg-[#2A120D]";
 
-    // Simulate AI Jury processing delay
-    setTimeout(() => {
-      setIsProcessing(false);
-      setVerdictResult({
-        caseNo: `CASE #${Math.floor(1000 + Math.random() * 9000)}`,
-        category: selectedCategory.toUpperCase(),
-        title: harshness === "destroy" ? "BEYOND SAVING" : harshness === "merciful" ? "CERTIFIED NPC" : "WALKING RED FLAG",
-        stampVariant: harshness === "destroy" ? "guilty" : "warning",
-        auraScore: harshness === "destroy" ? -1420 : -420,
-        delusion: harshness === "destroy" ? 99 : 82,
-        cringeScore: 89,
-        roast:
-          inputText.trim().length > 0
-            ? `${userName ? `Subject ${userName}: ` : ""}The court has analyzed your submission: "${inputText.trim()}". After deliberation, the AI Jury concludes that this exhibit represents an unprecedented breach of public decorum.`
-            : `${userName ? `Subject ${userName}: ` : ""}The court reviewed your uploaded exhibit. The evidence against your aesthetic choices is overwhelming and undisputed by all 12 AI jurors.`,
-        judgeNote: "Verdict is final. No appeals permitted in Courtroom 01.",
-      });
-    }, 1800);
-  };
+  const accentText =
+    persona.id === "normal"
+      ? "text-[#F5D77F]"
+      : persona.id === "sigma"
+      ? "text-[#93C5FD]"
+      : "text-[#FCA5A5]";
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 py-12 px-4 sm:px-6 lg:px-8 bg-court-grid">
-      <div className="max-w-4xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="text-center space-y-3">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-red-950/70 border border-red-800/80 text-red-400 text-xs font-mono font-bold tracking-widest uppercase">
-            <Gavel className="w-4 h-4 text-red-500" />
-            <span>COURTROOM CHAMBER 01</span>
+    <button
+      type="button"
+      onClick={onClick}
+      className={`relative p-4 rounded-xl border-2 text-left transition-all duration-200 cursor-pointer group overflow-hidden ${borderColor} ${
+        isActive ? activeBg : "bg-[#FDFBF7] hover:border-[#D4AF37]"
+      }`}
+    >
+      {/* Active glow strip */}
+      {isActive && (
+        <div
+          className="absolute top-0 left-0 right-0 h-0.5 opacity-80"
+          style={{ background: persona.accentColor }}
+        />
+      )}
+
+      <div className="flex items-start gap-3">
+        <span className="text-2xl leading-none mt-0.5 select-none">
+          {persona.badge}
+        </span>
+        <div className="flex-1 min-w-0">
+          <div
+            className={`font-serif font-extrabold text-sm mb-0.5 ${
+              isActive ? accentText : "text-[#2C261E]"
+            }`}
+          >
+            {persona.title}
           </div>
-          <h1 className="text-3xl sm:text-5xl font-black uppercase tracking-tighter text-white">
-            SUBMIT YOUR <span className="text-red-600">CASE</span>
+          <div
+            className={`text-xs font-typewriter leading-snug ${
+              isActive ? "text-[#C4B69C]" : "text-[#5C5245]"
+            }`}
+          >
+            {persona.subtitle}
+          </div>
+        </div>
+        {isActive && (
+          <div
+            className="w-2 h-2 rounded-full mt-1.5 shrink-0 animate-pulse"
+            style={{ background: persona.accentColor }}
+          />
+        )}
+      </div>
+    </button>
+  );
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
+export default function JudgePage() {
+  const { userName } = useUser();
+  const { playGavelSlam, playPaperRustle } = useSound();
+  const fileInputId = useId();
+
+  // Form state
+  const [selectedCategory, setSelectedCategory] = useState("profile");
+  const [selectedPersona, setSelectedPersona] = useState<PersonaType>("normal");
+  const [inputText, setInputText] = useState("");
+  const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+
+  // Processing & result state
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [verdictResult, setVerdictResult] = useState<JudgeResponse | null>(null);
+  const [caseNo, setCaseNo] = useState("");
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // ── Image helpers ───────────────────────────────────────────────────────────
+  const processFiles = useCallback(
+    async (files: FileList | File[]) => {
+      const allowed = ["image/png", "image/jpeg", "image/webp"];
+      const fileArr = Array.from(files).filter((f) =>
+        allowed.includes(f.type)
+      );
+      if (!fileArr.length) return;
+
+      playPaperRustle();
+
+      const newImages: UploadedImage[] = await Promise.all(
+        fileArr.map(
+          (file) =>
+            new Promise<UploadedImage>((resolve) => {
+              const reader = new FileReader();
+              reader.onload = (e) => {
+                const dataUrl = e.target?.result as string;
+                // Strip "data:<mime>;base64," prefix
+                const base64Data = dataUrl.split(",")[1];
+                resolve({
+                  id: `${Date.now()}-${Math.random()}`,
+                  name: file.name,
+                  mimeType: file.type,
+                  base64Data,
+                  previewUrl: dataUrl,
+                });
+              };
+              reader.readAsDataURL(file);
+            })
+        )
+      );
+
+      setUploadedImages((prev) => [...prev, ...newImages].slice(0, 4)); // cap at 4
+    },
+    [playPaperRustle]
+  );
+
+  const removeImage = (id: string) => {
+    setUploadedImages((prev) => prev.filter((img) => img.id !== id));
+    playPaperRustle();
+  };
+
+  // Drag-and-drop handlers
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+  const handleDragLeave = () => setIsDragging(false);
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    processFiles(e.dataTransfer.files);
+  };
+
+  // ── Submit handler ──────────────────────────────────────────────────────────
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    const hasText = inputText.trim().length > 0;
+    const hasImages = uploadedImages.length > 0;
+
+    if (!hasText && !hasImages) {
+      setError(
+        "The court requires at least one piece of evidence — upload a photo or type something."
+      );
+      return;
+    }
+
+    setIsProcessing(true);
+    setVerdictResult(null);
+    playGavelSlam();
+    const generatedCase = `CASE #${Math.floor(1000 + Math.random() * 9000)}`;
+    setCaseNo(generatedCase);
+
+    try {
+      const response = await fetch("/api/judge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          persona: selectedPersona,
+          contextText: hasText ? inputText.trim() : undefined,
+          images: hasImages
+            ? uploadedImages.map(({ mimeType, base64Data }) => ({
+                mimeType,
+                base64Data,
+              }))
+            : undefined,
+          category: selectedCategory,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "The AI bench is temporarily unavailable.");
+      }
+
+      setVerdictResult(data.verdict as JudgeResponse);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Unknown error occurred.";
+      setError(msg);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleReset = () => {
+    setVerdictResult(null);
+    setInputText("");
+    setUploadedImages([]);
+    setError(null);
+    playPaperRustle();
+  };
+
+  const activePersona = PERSONA_CONFIGS[selectedPersona];
+
+  return (
+    <div className="min-h-screen bg-[#1A0B08] text-[#F7F2E7] py-12 px-4 sm:px-6 lg:px-8 bg-court-grid courtroom-vignette">
+      <div className="max-w-4xl mx-auto space-y-8 relative z-10">
+
+        {/* ── Page Header ────────────────────────────────────────────────────── */}
+        <div className="text-center space-y-3">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#2A120D] border border-[#D4AF37] text-[#F5D77F] text-xs font-typewriter font-bold tracking-widest uppercase shadow-md">
+            <Gavel className="w-4 h-4 text-[#D4AF37]" />
+            <span>EXHIBIT SUBMISSION WORKBENCH • CHAMBER 01</span>
+          </div>
+          <h1 className="text-4xl sm:text-6xl font-black uppercase tracking-tight text-[#F7F2E7] font-serif">
+            SUBMIT YOUR{" "}
+            <span className="text-[#D4AF37] underline decoration-[#997A15]">
+              EXHIBIT A
+            </span>
           </h1>
-          <p className="text-zinc-400 text-sm sm:text-base max-w-xl mx-auto font-medium">
+          <p className="text-[#C4B69C] text-sm sm:text-base max-w-xl mx-auto font-serif">
             {userName ? (
-              <span>Alright, <strong className="text-white underline decoration-red-600">{userName}</strong>. Let&apos;s see what the court thinks.</span>
+              <span>
+                Stand before the Bench,{" "}
+                <strong className="text-[#F5D77F] underline">{userName}</strong>
+                . Present your evidence for AI trial.
+              </span>
             ) : (
-              <span>Choose a category, upload your evidence, select your harshness level, and let the AI Jury sentence you.</span>
+              <span>
+                Select an exhibit category, attach your evidence, choose your
+                judge, and face the AI Bench.
+              </span>
             )}
           </p>
         </div>
 
-        {/* Workbench Card */}
-        <div className="bg-zinc-900/80 border-2 border-zinc-800 rounded-2xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl space-y-6">
-          {/* 1. Category Tabs */}
-          <div className="space-y-3">
-            <label className="text-xs font-mono font-bold text-zinc-300 uppercase tracking-wider block">
-              1. SELECT CATEGORY
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-              {categories.map((cat) => {
-                const Icon = cat.icon;
-                const isSelected = selectedCategory === cat.id;
-                return (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => setSelectedCategory(cat.id)}
-                    className={`flex items-center gap-2 p-3 rounded-xl border text-sm font-bold transition-all text-left ${
-                      isSelected
-                        ? "bg-red-600 border-red-500 text-white shadow-md shadow-red-900/40"
-                        : "bg-zinc-950 border-zinc-800 text-zinc-300 hover:border-zinc-700 hover:text-white"
-                    }`}
-                  >
-                    <span className="text-lg">{cat.emoji}</span>
-                    <span className="truncate">{cat.name}</span>
-                  </button>
-                );
-              })}
-            </div>
+        {/* ── Dossier Folder ──────────────────────────────────────────────────── */}
+        <div className="relative">
+          {/* Folder Tab */}
+          <div className="flex items-center justify-between px-6 py-2.5 bg-[#E5D4AB] text-[#2C261E] rounded-t-2xl font-serif font-extrabold text-sm sm:text-base tracking-wider uppercase border-b border-[#D8C497] w-fit shadow-md">
+            <span className="flex items-center gap-2">
+              <FileText className="w-4 h-4 text-[#7A6438]" />
+              EXHIBIT DOSSIER — DOCKET #{Math.floor(1000 + Math.random() * 9000)}
+            </span>
           </div>
 
-          {/* 2. Evidence Input Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-3">
-              <label className="text-xs font-mono font-bold text-zinc-300 uppercase tracking-wider block">
-                2. UPLOAD OR TYPE EVIDENCE
-              </label>
+          {/* Dossier Body */}
+          <div className="dossier-folder p-6 sm:p-8 space-y-8 rounded-tr-2xl rounded-b-2xl shadow-2xl">
+            <form onSubmit={handleSubmit} className="space-y-8">
 
-              {/* Upload Dropzone Visual */}
-              <div className="border-2 border-dashed border-zinc-800 hover:border-red-600/70 rounded-xl p-6 text-center bg-zinc-950/60 transition-colors group cursor-pointer">
-                <Upload className="w-8 h-8 text-zinc-500 group-hover:text-red-500 mx-auto mb-2 transition-colors" />
-                <p className="text-sm font-bold text-zinc-200">
-                  Drop screenshot, photo, or outfit image here
-                </p>
-                <p className="text-xs text-zinc-500 mt-1">PNG, JPG, WEBP up to 10MB (Mock Upload)</p>
+              {/* ── Step 1: Category ───────────────────────────────────────── */}
+              <div className="space-y-3">
+                <label className="text-xs font-typewriter font-bold text-[#5C5245] uppercase tracking-wider block">
+                  1. SELECT EXHIBIT CLASSIFICATION
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  {categories.map((cat) => {
+                    const isSelected = selectedCategory === cat.id;
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedCategory(cat.id);
+                          playPaperRustle();
+                        }}
+                        className={`flex items-center gap-2 p-3 rounded-xl border text-xs sm:text-sm font-serif font-bold transition-all text-left cursor-pointer ${
+                          isSelected
+                            ? "bg-[#2A120D] border-[#D4AF37] text-[#F5D77F] shadow-lg"
+                            : "bg-[#FDFBF7] border-[#E2D3B5] text-[#2C261E] hover:border-[#D4AF37] hover:bg-[#FAF4E8]"
+                        }`}
+                      >
+                        <span className="text-base">{cat.emoji}</span>
+                        <span className="truncate">{cat.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
-              {/* Text Input */}
-              <div className="space-y-1">
-                <textarea
-                  value={inputText}
-                  onChange={(e) => setInputText(e.target.value)}
-                  placeholder="Or type/paste your bio, text message, dating prompt, or questionable life decision here..."
-                  rows={4}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 font-sans resize-none"
-                />
-              </div>
-            </div>
+              {/* ── Step 2: Evidence Upload ────────────────────────────────── */}
+              <div className="space-y-3">
+                <label className="text-xs font-typewriter font-bold text-[#5C5245] uppercase tracking-wider block">
+                  2. ATTACH PHYSICAL OR TYPED EVIDENCE
+                </label>
 
-            {/* 3. Harshness Selector */}
-            <div className="space-y-3">
-              <label className="text-xs font-mono font-bold text-zinc-300 uppercase tracking-wider block">
-                3. SELECT HARSHNESS LEVEL
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {harshnessLevels.map((lvl) => {
-                  const isSelected = harshness === lvl.id;
-                  return (
-                    <button
-                      key={lvl.id}
-                      type="button"
-                      onClick={() => setHarshness(lvl.id)}
-                      className={`p-3.5 rounded-xl border text-left transition-all ${
-                        isSelected
-                          ? "bg-red-950/60 border-red-600 text-white shadow-lg shadow-red-950/40"
-                          : "bg-zinc-950 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200"
+                {/* Drop zone */}
+                <div
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`parchment-sheet border-2 border-dashed rounded-xl p-6 text-center transition-all duration-200 group cursor-pointer ${
+                    isDragging
+                      ? "border-[#D4AF37] bg-[#FAF4E8] scale-[1.01]"
+                      : "border-[#D4AF37] hover:border-[#997A15]"
+                  }`}
+                >
+                  <input
+                    id={fileInputId}
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    multiple
+                    className="sr-only"
+                    onChange={(e) =>
+                      e.target.files && processFiles(e.target.files)
+                    }
+                  />
+                  <div className="flex flex-col items-center gap-2 pointer-events-none">
+                    <Upload
+                      className={`w-8 h-8 transition-transform ${
+                        isDragging
+                          ? "scale-125 text-[#D4AF37]"
+                          : "text-[#997A15] group-hover:scale-110"
                       }`}
-                    >
-                      <div className="font-bold text-sm text-white mb-0.5">{lvl.name}</div>
-                      <div className="text-xs text-zinc-400">{lvl.desc}</div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+                    />
+                    <p className="text-sm font-serif font-bold text-[#2C261E]">
+                      {isDragging
+                        ? "Drop to submit as exhibit…"
+                        : "Drag & drop or click to attach evidence"}
+                    </p>
+                    <p className="text-xs font-typewriter text-[#5C5245]">
+                      PNG, JPG, WEBP — up to 4 files
+                    </p>
+                  </div>
+                </div>
 
-            {/* Submit Button */}
-            <Button
-              type="submit"
-              variant="primary"
-              size="xl"
-              disabled={isProcessing}
-              className="w-full justify-center shadow-red-600/40"
-            >
-              {isProcessing ? (
-                <span className="flex items-center gap-2">
-                  <RefreshCw className="w-5 h-5 animate-spin" />
-                  DELIBERATING JURY &amp; SCANNING AURA...
-                </span>
-              ) : (
-                "⚖ SUBMIT TO COURT FOR JUDGMENT"
+                {/* Image previews */}
+                {uploadedImages.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {uploadedImages.map((img) => (
+                      <div
+                        key={img.id}
+                        className="relative rounded-xl overflow-hidden border-2 border-[#D4AF37]/60 shadow-md group"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={img.previewUrl}
+                          alt={img.name}
+                          className="w-full h-24 object-cover"
+                        />
+                        <div className="absolute inset-0 bg-[#1A0B08]/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeImage(img.id);
+                            }}
+                            className="p-1.5 rounded-full bg-[#991B1B] text-white"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        <div className="absolute bottom-0 left-0 right-0 bg-[#1A0B08]/80 px-2 py-0.5">
+                          <p className="text-[9px] font-typewriter text-[#F5D77F] truncate">
+                            <ImageIcon className="w-2.5 h-2.5 inline mr-0.5" />
+                            {img.name}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Text input */}
+                <div className="space-y-1">
+                  <span className="text-[10px] font-typewriter text-[#5C5245] uppercase tracking-widest block">
+                    TYPE TRANSCRIPT ON RULED LEGAL PAD:
+                  </span>
+                  <textarea
+                    value={inputText}
+                    onChange={(e) => setInputText(e.target.value)}
+                    placeholder="Type or paste your bio, dating prompt, text message, or questionable life decision here…"
+                    rows={4}
+                    className="w-full ruled-paper p-4 text-sm font-typewriter text-[#2C261E] placeholder:text-[#7A6A54] focus:outline-none focus:ring-2 focus:ring-[#D4AF37] rounded-xl border border-[#E2D3B5] resize-none shadow-inner"
+                  />
+                </div>
+              </div>
+
+              {/* ── Step 3: Persona Selector ───────────────────────────────── */}
+              <div className="space-y-3">
+                <label className="text-xs font-typewriter font-bold text-[#5C5245] uppercase tracking-wider flex items-center gap-1.5">
+                  <Scale className="w-4 h-4 text-[#997A15]" />
+                  3. SELECT YOUR JUDICIAL PANEL
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {(["normal", "sigma", "brutal"] as PersonaType[]).map((pid) => (
+                    <PersonaCard
+                      key={pid}
+                      persona={PERSONA_CONFIGS[pid]}
+                      isActive={selectedPersona === pid}
+                      onClick={() => {
+                        setSelectedPersona(pid);
+                        playPaperRustle();
+                      }}
+                    />
+                  ))}
+                </div>
+
+                {/* Active persona mini descriptor */}
+                <div className="rounded-lg bg-[#2A120D] border border-[#D4AF37]/30 px-4 py-2 flex items-center gap-2">
+                  <span className="text-base">{activePersona.badge}</span>
+                  <p className="text-xs font-typewriter text-[#C4B69C]">
+                    <span className="text-[#F5D77F] font-bold">
+                      {activePersona.title}:
+                    </span>{" "}
+                    {activePersona.subtitle}
+                  </p>
+                </div>
+              </div>
+
+              {/* ── Error Banner ───────────────────────────────────────────── */}
+              {error && (
+                <div className="flex items-start gap-2.5 rounded-xl bg-[#991B1B]/10 border border-[#991B1B]/40 px-4 py-3">
+                  <AlertTriangle className="w-4 h-4 text-[#991B1B] shrink-0 mt-0.5" />
+                  <p className="text-sm font-typewriter text-[#991B1B] font-bold">
+                    {error}
+                  </p>
+                </div>
               )}
-            </Button>
-          </form>
+
+              {/* ── Submit Button ──────────────────────────────────────────── */}
+              <Button
+                type="submit"
+                variant="primary"
+                size="xl"
+                disabled={isProcessing}
+                className="w-full justify-center btn-brass py-4 text-lg"
+              >
+                {isProcessing ? (
+                  <LoadingCopy className="text-[#1A0B08] text-sm font-typewriter" />
+                ) : (
+                  "⚖ SUBMIT EXHIBIT TO BENCH FOR JUDGMENT"
+                )}
+              </Button>
+            </form>
+          </div>
         </div>
 
-        {/* Verdict Output Preview Drawer */}
+        {/* ── Verdict Document ───────────────────────────────────────────────── */}
         {verdictResult && (
-          <div className="bg-zinc-900 border-2 border-red-600/80 rounded-2xl p-6 sm:p-8 space-y-6 shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300">
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-xs font-bold text-red-500">{verdictResult.caseNo}</span>
-                <span className="text-xs text-zinc-400 font-mono">• OFFICIAL VERDICT</span>
-              </div>
-              <VerdictStamp text={verdictResult.title} variant={verdictResult.stampVariant} size="sm" />
-            </div>
-
-            <div className="space-y-4">
-              <div className="bg-zinc-950 rounded-xl p-4 border border-zinc-800">
-                <p className="text-base text-zinc-200 font-medium leading-relaxed">
-                  &ldquo;{verdictResult.roast}&rdquo;
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 font-mono text-xs">
-                <div className="bg-zinc-950 p-3 rounded-lg border border-zinc-800">
-                  <span className="text-zinc-400">AURA CHANGE:</span>
-                  <p className="text-lg font-black text-red-500">{verdictResult.auraScore} PTS</p>
-                </div>
-                <div className="bg-zinc-950 p-3 rounded-lg border border-zinc-800">
-                  <span className="text-zinc-400">DELUSION INDEX:</span>
-                  <p className="text-lg font-black text-amber-400">{verdictResult.delusion}%</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-4 border-t border-zinc-800 flex items-center justify-between">
-              <span className="text-xs font-mono text-zinc-500">⚖ {verdictResult.judgeNote}</span>
-              <Button onClick={() => setVerdictResult(null)} variant="secondary" size="sm">
-                TRY ANOTHER CASE
-              </Button>
-            </div>
-          </div>
+          <VerdictDocument
+            result={verdictResult}
+            caseNo={caseNo}
+            personaTitle={activePersona.title}
+            personaBadge={activePersona.badge}
+            onReset={handleReset}
+          />
         )}
       </div>
     </div>

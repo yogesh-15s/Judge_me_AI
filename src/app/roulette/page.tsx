@@ -3,7 +3,8 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { VerdictStamp } from "@/components/ui/VerdictStamp";
-import { Dices, RefreshCw, Flame, Sparkles, Share2, ArrowRight } from "lucide-react";
+import { useSound } from "@/context/SoundContext";
+import { Dices, RefreshCw, Flame, Sparkles, Share2, ArrowRight, Gavel } from "lucide-react";
 
 const rouletteCases = [
   {
@@ -36,7 +37,7 @@ const rouletteCases = [
   {
     caseNo: "CASE #0205",
     category: "🧠 LIFE CHOICES",
-    title: "BEYOND SAVING",
+    title: "MAXIMUM SENTENCE",
     stampVariant: "guilty" as const,
     auraScore: -1500,
     delusion: 100,
@@ -54,6 +55,7 @@ const rouletteCases = [
 ];
 
 export default function RoulettePage() {
+  const { playPaperRustle, playGavelSlam } = useSound();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isSpinning, setIsSpinning] = useState(false);
   const currentCase = rouletteCases[currentIndex];
@@ -63,37 +65,39 @@ export default function RoulettePage() {
     let spins = 0;
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % rouletteCases.length);
+      playPaperRustle();
       spins++;
       if (spins > 10) {
         clearInterval(interval);
         setIsSpinning(false);
+        playGavelSlam();
       }
     }, 100);
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 py-12 px-4 sm:px-6 lg:px-8 bg-court-grid">
-      <div className="max-w-4xl mx-auto space-y-8">
+    <div className="min-h-screen bg-[#1A0B08] text-[#F7F2E7] py-12 px-4 sm:px-6 lg:px-8 bg-court-grid courtroom-vignette">
+      <div className="max-w-4xl mx-auto space-y-8 relative z-10">
         {/* Header */}
         <div className="text-center space-y-3">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-950/70 border border-amber-800/80 text-amber-400 text-xs font-mono font-bold tracking-widest uppercase">
-            <Dices className="w-4 h-4 text-amber-500 animate-spin" />
-            <span>RANDOM JUDGMENT ROULETTE</span>
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#2A120D] border border-[#D4AF37] text-[#F5D77F] text-xs font-typewriter font-bold tracking-widest uppercase shadow-md">
+            <Dices className="w-4 h-4 text-[#D4AF37] animate-spin" />
+            <span>COURT CHAMBER ROULETTE • JURY WHEEL</span>
           </div>
-          <h1 className="text-3xl sm:text-5xl font-black uppercase tracking-tighter text-white">
-            SPIN FOR <span className="text-amber-500">VERDICT</span>
+          <h1 className="text-4xl sm:text-6xl font-black uppercase tracking-tight text-[#F7F2E7] font-serif">
+            SPIN THE <span className="text-[#D4AF37]">JURY WHEEL</span>
           </h1>
-          <p className="text-zinc-400 text-sm sm:text-base max-w-xl mx-auto">
-            Cycle through random community case files or test your luck against the court of internet destiny.
+          <p className="text-[#C4B69C] text-sm sm:text-base max-w-xl mx-auto font-serif">
+            Cycle through random community case files or test your luck against the supreme court of internet destiny.
           </p>
         </div>
 
         {/* Spin Wheel Card */}
-        <div className="bg-zinc-900/80 border-2 border-zinc-800 rounded-2xl p-8 shadow-2xl backdrop-blur-xl space-y-8 text-center relative overflow-hidden">
+        <div className="dossier-folder rounded-2xl p-8 shadow-2xl space-y-8 text-center relative overflow-hidden">
           {/* Top Status */}
-          <div className="flex items-center justify-between text-xs font-mono text-zinc-400 border-b border-zinc-800 pb-4">
+          <div className="flex items-center justify-between text-xs font-typewriter text-[#5C5245] border-b border-[#D8C497] pb-4 font-bold">
             <span>{currentCase.caseNo}</span>
-            <span className="text-amber-400 font-bold">{currentCase.category}</span>
+            <span className="text-[#997A15]">{currentCase.category}</span>
           </div>
 
           {/* Verdict Display */}
@@ -105,43 +109,44 @@ export default function RoulettePage() {
                 rotate="-rotate-2"
                 size="lg"
                 key={currentCase.caseNo}
+                animate={!isSpinning}
               />
             </div>
 
-            <div className="bg-zinc-950/90 rounded-2xl p-6 border border-zinc-800 max-w-2xl mx-auto">
-              <p className="text-lg sm:text-xl font-bold text-zinc-100 italic">
+            <div className="parchment-sheet rounded-2xl p-6 border border-[#E2D3B5] max-w-2xl mx-auto shadow-inner">
+              <p className="text-lg sm:text-xl font-serif font-bold text-[#2C261E] italic leading-relaxed">
                 &ldquo;{currentCase.quote}&rdquo;
               </p>
             </div>
 
-            <div className="flex items-center justify-center gap-6 font-mono text-sm">
-              <div className="bg-zinc-950 px-4 py-2 rounded-xl border border-zinc-800">
-                <span className="text-zinc-500 block text-xs">AURA RATING</span>
-                <span className={`font-black text-lg ${currentCase.auraScore > 0 ? "text-amber-400" : "text-red-500"}`}>
-                  {currentCase.auraScore > 0 ? `+${currentCase.auraScore}` : currentCase.auraScore}
+            <div className="flex items-center justify-center gap-6 font-typewriter text-sm">
+              <div className="bg-[#EDE2CE] px-5 py-2.5 rounded-xl border border-[#D8C497]">
+                <span className="text-[#5C5245] block text-xs font-bold">AURA TALLY</span>
+                <span className={`font-black text-lg ${currentCase.auraScore > 0 ? "text-[#997A15]" : "text-[#991B1B]"}`}>
+                  {currentCase.auraScore > 0 ? `+${currentCase.auraScore}` : currentCase.auraScore} PTS
                 </span>
               </div>
-              <div className="bg-zinc-950 px-4 py-2 rounded-xl border border-zinc-800">
-                <span className="text-zinc-500 block text-xs">DELUSION %</span>
-                <span className="font-black text-lg text-red-400">{currentCase.delusion}%</span>
+              <div className="bg-[#EDE2CE] px-5 py-2.5 rounded-xl border border-[#D8C497]">
+                <span className="text-[#5C5245] block text-xs font-bold">DELUSION INDEX</span>
+                <span className="font-black text-lg text-[#991B1B]">{currentCase.delusion}%</span>
               </div>
             </div>
           </div>
 
           {/* Action Spin Button */}
-          <div className="pt-4 border-t border-zinc-800 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="pt-4 border-t border-[#D8C497] flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button
               onClick={handleSpin}
               disabled={isSpinning}
-              variant="gold"
+              variant="primary"
               size="xl"
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto btn-brass px-8"
             >
               <Dices className={`w-6 h-6 ${isSpinning ? "animate-spin" : ""}`} />
-              SPIN THE WHEEL 🎲
+              SPIN JURY WHEEL 🎲
             </Button>
-            <Button href="/judge" variant="secondary" size="xl" className="w-full sm:w-auto">
-              SUBMIT MY OWN CASE ⚖
+            <Button href="/judge" variant="secondary" size="xl" className="w-full sm:w-auto bg-[#2A120D] text-[#F7F2E7]">
+              SUBMIT MY OWN EXHIBIT ⚖
             </Button>
           </div>
         </div>
