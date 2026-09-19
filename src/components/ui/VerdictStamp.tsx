@@ -87,6 +87,7 @@ interface VerdictDocumentProps {
   caseNo: string;
   personaTitle: string;
   personaBadge: string;
+  submittedTranscript?: string;
   onReset: () => void;
 }
 
@@ -95,6 +96,7 @@ export function VerdictDocument({
   caseNo,
   personaTitle,
   personaBadge,
+  submittedTranscript,
   onReset,
 }: VerdictDocumentProps) {
   const stampVariant = verdictToVariant(result.verdict);
@@ -138,6 +140,23 @@ export function VerdictDocument({
           animate={true}
         />
       </div>
+
+      {/* ── Ruled Legal Pad Transcript on Record ───────────────────────────── */}
+      {submittedTranscript && (
+        <div className="ruled-paper p-4 rounded-xl border border-[#E2D3B5] shadow-inner space-y-1">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-typewriter font-bold text-[#7A6A54] uppercase tracking-wider">
+              TRANSCRIPT FROM RULED LEGAL PAD (ENTERED INTO EVIDENCE):
+            </span>
+            <span className="text-[9px] font-typewriter text-[#997A15] bg-[#F5D77F]/30 px-2 py-0.5 rounded border border-[#D4AF37]/30">
+              EXHIBIT ON FILE
+            </span>
+          </div>
+          <p className="font-typewriter text-xs sm:text-sm text-[#2C261E] italic leading-relaxed whitespace-pre-wrap pt-0.5">
+            &ldquo;{submittedTranscript}&rdquo;
+          </p>
+        </div>
+      )}
 
       {/* ── Closing Argument ───────────────────────────────────────────────── */}
       <div className="bg-[#F7F2E7] rounded-xl p-5 border border-[#E2D3B5] shadow-inner">

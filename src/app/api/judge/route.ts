@@ -64,12 +64,12 @@ const VERDICT_SCHEMA = {
     charge: {
       type: Type.STRING,
       description:
-        'A concise, witty judicial charge in legal-sounding language, e.g. "Grand Larceny of Public Patience".',
+        'A concise, witty judicial charge in legal-sounding language directly addressing the defendant\'s written legal pad transcript and/or submitted exhibits, e.g. "Grand Larceny of Public Patience" or "First-Degree Delusion on the Legal Pad".',
     },
     closing_argument: {
       type: Type.STRING,
       description:
-        '2–3 sentences of analysis written strictly in the active persona voice.',
+        '2–3 sentences of analysis written strictly in the active persona voice. If the defendant provided text on the ruled legal pad, you MUST explicitly critique, quote, or address what they typed on the pad.',
     },
     recommendation: {
       type: Type.STRING,
@@ -120,18 +120,19 @@ export async function POST(req: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const contentParts: any[] = [];
 
-    // Add user-supplied text context
+    // Add user-supplied text context from ruled legal pad
     if (hasText) {
-      const exhibitLabel = category
-        ? `[EXHIBIT TYPE: ${category.toUpperCase()}]\n\n`
-        : '';
+      const exhibitCategory = category ? `[EXHIBIT CATEGORY: ${category.toUpperCase()}]\n` : '';
       contentParts.push({
-        text: `${exhibitLabel}${contextText!.trim()}`,
+        text: `⚖ COURT RECORD EXHIBIT — DEFENDANT'S WRITTEN STATEMENT (TYPED ON RULED LEGAL PAD):\n${exhibitCategory}"""\n${contextText!.trim()}\n"""\n\n[MANDATORY COURT DIRECTIVE]: The Court MUST thoroughly read and scrutinize the written statement above from the defendant's ruled legal pad. In your charge, closing argument, and recommendation, explicitly address, cite, and evaluate what the defendant wrote on this pad alongside any submitted visual evidence.`,
       });
     }
 
     // Add image parts (base64 encoded multimodal input)
     if (hasImages) {
+      contentParts.push({
+        text: `⚖ COURT RECORD EXHIBIT — SUBMITTED VISUAL EVIDENCE:\nExamine the visual exhibit(s) attached below, factoring them in alongside any statement typed on the ruled legal pad:`,
+      });
       for (const img of images!) {
         if (!img.base64Data || !img.mimeType) continue;
         contentParts.push({
@@ -144,9 +145,12 @@ export async function POST(req: NextRequest) {
     }
 
     // Append structured instruction at the end so the model always knows the schema
+    const finalPrompt = hasText
+      ? `\n\nFINAL INSTRUCTION: Deliberate on all submitted evidence with special focus on what the defendant typed on the ruled legal pad: "${contextText!.trim().slice(0, 120)}${contextText!.trim().length > 120 ? '...' : ''}". Your closing argument and charge MUST directly acknowledge and react to their written words. Return a single valid JSON verdict object matching the required schema exactly.`
+      : '\n\nFINAL INSTRUCTION: Analyze all submitted evidence carefully and return a single valid JSON verdict object matching the required schema exactly.';
+
     contentParts.push({
-      text:
-        '\n\nAnalyze all submitted evidence carefully and return a single valid JSON verdict object matching the required schema exactly.',
+      text: finalPrompt,
     });
 
     // ── Gemini API call with fallback cascade & timeout ───────────────────────

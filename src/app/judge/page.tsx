@@ -149,6 +149,7 @@ export default function JudgePage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [verdictResult, setVerdictResult] = useState<JudgeResponse | null>(null);
+  const [submittedTranscript, setSubmittedTranscript] = useState("");
   const [caseNo, setCaseNo] = useState("");
   const [docketNumber, setDocketNumber] = useState("7842");
 
@@ -255,6 +256,7 @@ export default function JudgePage() {
 
     setIsProcessing(true);
     setVerdictResult(null);
+    setSubmittedTranscript(hasText ? inputText.trim() : "");
     const generatedCase = `CASE #${Math.floor(1000 + Math.random() * 9000)}`;
     setCaseNo(generatedCase);
 
@@ -294,6 +296,7 @@ export default function JudgePage() {
     setVerdictResult(null);
     setInputText("");
     setUploadedImages([]);
+    setSubmittedTranscript("");
     setError(null);
   };
 
@@ -540,6 +543,7 @@ export default function JudgePage() {
             caseNo={caseNo}
             personaTitle={activePersona.title}
             personaBadge={activePersona.badge}
+            submittedTranscript={submittedTranscript}
             onReset={handleReset}
           />
         )}
