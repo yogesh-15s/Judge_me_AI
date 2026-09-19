@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React from "react";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { useSound } from "@/context/SoundContext";
 import { JudgeResponse, VerdictType } from "@/lib/judgePersonas";
 
 // ─── Existing stamp props (backwards-compatible) ──────────────────────────────
@@ -24,16 +23,6 @@ export function VerdictStamp({
   animate = false,
   className,
 }: VerdictStampProps) {
-  const { playStampThud } = useSound();
-
-  useEffect(() => {
-    if (animate) {
-      const timer = setTimeout(() => {
-        playStampThud();
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [animate, playStampThud, text]);
 
   const variantStyles = {
     guilty:
@@ -108,7 +97,6 @@ export function VerdictDocument({
   personaBadge,
   onReset,
 }: VerdictDocumentProps) {
-  const { playGavelSlam } = useSound();
   const stampVariant = verdictToVariant(result.verdict);
   const isPositiveAura = result.aura_delta >= 0;
 
@@ -229,10 +217,7 @@ export function VerdictDocument({
           ⚖ Verdict signed &amp; entered into public record. No appeals permitted.
         </span>
         <button
-          onClick={() => {
-            playGavelSlam();
-            onReset();
-          }}
+          onClick={onReset}
           className="btn-brass px-5 py-2 text-xs rounded-lg font-serif font-black uppercase tracking-wide"
         >
           TRY ANOTHER CASE FILE

@@ -1,11 +1,10 @@
 "use client";
 
-import React, { useState, useRef, useCallback, useId } from "react";
+import React, { useState, useEffect, useRef, useCallback, useId } from "react";
 import { Button } from "@/components/ui/Button";
 import { VerdictDocument } from "@/components/ui/VerdictStamp";
 import { LoadingCopy } from "@/components/ui/LoadingCopy";
 import { useUser } from "@/context/UserContext";
-import { useSound } from "@/context/SoundContext";
 import {
   PERSONA_CONFIGS,
   PersonaType,
@@ -137,7 +136,6 @@ function PersonaCard({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function JudgePage() {
   const { userName } = useUser();
-  const { playGavelSlam, playPaperRustle } = useSound();
   const fileInputId = useId();
 
   // Form state
@@ -152,10 +150,52 @@ export default function JudgePage() {
   const [error, setError] = useState<string | null>(null);
   const [verdictResult, setVerdictResult] = useState<JudgeResponse | null>(null);
   const [caseNo, setCaseNo] = useState("");
+  const [docketNumber, setDocketNumber] = useState("7842");
+
+  useEffect(() => {
+    setDocketNumber(String(Math.floor(1000 + Math.random() * 9000)));
+  }, []);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // ── Image helpers ───────────────────────────────────────────────────────────
+  // ── Image helpers (client-side resize to prevent massive payload timeouts) ───
+  const resizeImage = (file: File): Promise<{ base64Data: string; previewUrl: string }> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const rawUrl = e.target?.result as string;
+        const img = new Image();
+        img.onload = () => {
+          const MAX_DIM = 1200;
+          let { width, height } = img;
+          if (width > MAX_DIM || height > MAX_DIM) {
+            if (width > height) {
+              height = Math.round((height * MAX_DIM) / width);
+              width = MAX_DIM;
+            } else {
+              width = Math.round((width * MAX_DIM) / height);
+              height = MAX_DIM;
+            }
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx?.drawImage(img, 0, 0, width, height);
+
+          const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.85);
+          const base64Data = compressedDataUrl.split(",")[1];
+          resolve({ base64Data, previewUrl: compressedDataUrl });
+        };
+        img.onerror = () => {
+          resolve({ base64Data: rawUrl.split(",")[1], previewUrl: rawUrl });
+        };
+        img.src = rawUrl;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
   const processFiles = useCallback(
     async (files: FileList | File[]) => {
       const allowed = ["image/png", "image/jpeg", "image/webp"];
@@ -164,38 +204,26 @@ export default function JudgePage() {
       );
       if (!fileArr.length) return;
 
-      playPaperRustle();
-
       const newImages: UploadedImage[] = await Promise.all(
-        fileArr.map(
-          (file) =>
-            new Promise<UploadedImage>((resolve) => {
-              const reader = new FileReader();
-              reader.onload = (e) => {
-                const dataUrl = e.target?.result as string;
-                // Strip "data:<mime>;base64," prefix
-                const base64Data = dataUrl.split(",")[1];
-                resolve({
-                  id: `${Date.now()}-${Math.random()}`,
-                  name: file.name,
-                  mimeType: file.type,
-                  base64Data,
-                  previewUrl: dataUrl,
-                });
-              };
-              reader.readAsDataURL(file);
-            })
-        )
+        fileArr.map(async (file) => {
+          const { base64Data, previewUrl } = await resizeImage(file);
+          return {
+            id: `${Date.now()}-${Math.random()}`,
+            name: file.name,
+            mimeType: "image/jpeg",
+            base64Data,
+            previewUrl,
+          };
+        })
       );
 
       setUploadedImages((prev) => [...prev, ...newImages].slice(0, 4)); // cap at 4
     },
-    [playPaperRustle]
+    []
   );
 
   const removeImage = (id: string) => {
     setUploadedImages((prev) => prev.filter((img) => img.id !== id));
-    playPaperRustle();
   };
 
   // Drag-and-drop handlers
@@ -227,7 +255,6 @@ export default function JudgePage() {
 
     setIsProcessing(true);
     setVerdictResult(null);
-    playGavelSlam();
     const generatedCase = `CASE #${Math.floor(1000 + Math.random() * 9000)}`;
     setCaseNo(generatedCase);
 
@@ -268,7 +295,6 @@ export default function JudgePage() {
     setInputText("");
     setUploadedImages([]);
     setError(null);
-    playPaperRustle();
   };
 
   const activePersona = PERSONA_CONFIGS[selectedPersona];
@@ -309,9 +335,9 @@ export default function JudgePage() {
         <div className="relative">
           {/* Folder Tab */}
           <div className="flex items-center justify-between px-6 py-2.5 bg-[#E5D4AB] text-[#2C261E] rounded-t-2xl font-serif font-extrabold text-sm sm:text-base tracking-wider uppercase border-b border-[#D8C497] w-fit shadow-md">
-            <span className="flex items-center gap-2">
+            <span className="flex items-center gap-2" suppressHydrationWarning>
               <FileText className="w-4 h-4 text-[#7A6438]" />
-              EXHIBIT DOSSIER — DOCKET #{Math.floor(1000 + Math.random() * 9000)}
+              EXHIBIT DOSSIER — DOCKET #{docketNumber}
             </span>
           </div>
 
@@ -333,7 +359,6 @@ export default function JudgePage() {
                         type="button"
                         onClick={() => {
                           setSelectedCategory(cat.id);
-                          playPaperRustle();
                         }}
                         className={`flex items-center gap-2 p-3 rounded-xl border text-xs sm:text-sm font-serif font-bold transition-all text-left cursor-pointer ${
                           isSelected
@@ -463,7 +488,6 @@ export default function JudgePage() {
                       isActive={selectedPersona === pid}
                       onClick={() => {
                         setSelectedPersona(pid);
-                        playPaperRustle();
                       }}
                     />
                   ))}

@@ -149,37 +149,79 @@ export async function POST(req: NextRequest) {
         '\n\nAnalyze all submitted evidence carefully and return a single valid JSON verdict object matching the required schema exactly.',
     });
 
-    // ── Gemini API call ───────────────────────────────────────────────────────
+    // ── Gemini API call with fallback cascade & timeout ───────────────────────
     const client = getClient();
-    const model = 'gemini-2.5-flash';
+    const candidateModels = [
+      process.env.GEMINI_MODEL,
+      'gemini-3.5-flash-lite',
+      'gemini-3.5-flash',
+      'gemini-3.6-flash',
+    ].filter(Boolean) as string[];
+    const modelsToTry = [...new Set(candidateModels)];
 
-    const response = await client.models.generateContent({
-      model,
-      contents: [
+    let responseText = '';
+    let lastError: unknown = null;
+
+    for (const model of modelsToTry) {
+      try {
+        console.log(`[/api/judge] Attempting generation with ${model}...`);
+        
+        const generatePromise = client.models.generateContent({
+          model,
+          contents: [
+            {
+              role: 'user',
+              parts: contentParts,
+            },
+          ],
+          config: {
+            systemInstruction: personaConfig.systemPrompt,
+            temperature: personaConfig.temperature,
+            responseMimeType: 'application/json',
+            responseSchema: VERDICT_SCHEMA,
+          },
+        });
+
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error(`Model ${model} timed out after 30s`)), 30000)
+        );
+
+        const res = await Promise.race([generatePromise, timeoutPromise]);
+        if (res && res.text) {
+          responseText = res.text;
+          console.log(`[/api/judge] Successfully generated verdict using ${model}`);
+          break;
+        }
+      } catch (err: unknown) {
+        lastError = err;
+        const errMessage = err instanceof Error ? err.message : String(err);
+        console.warn(`[/api/judge] Model ${model} failed (${errMessage}), trying fallback...`);
+      }
+    }
+
+    if (!responseText) {
+      const errMsg = lastError instanceof Error ? lastError.message : 'All AI model candidates failed.';
+      const isOverloaded = errMsg.includes('503') || errMsg.includes('high demand') || errMsg.includes('UNAVAILABLE');
+      return NextResponse.json(
         {
-          role: 'user',
-          parts: contentParts,
+          error: isOverloaded
+            ? 'The courtroom AI is currently experiencing high demand. Please try again in a few moments.'
+            : errMsg,
         },
-      ],
-      config: {
-        systemInstruction: personaConfig.systemPrompt,
-        temperature: personaConfig.temperature,
-        responseMimeType: 'application/json',
-        responseSchema: VERDICT_SCHEMA,
-      },
-    });
+        { status: isOverloaded ? 503 : 500 }
+      );
+    }
 
     // ── Extract & validate response ───────────────────────────────────────────
-    const rawText = response.text ?? '';
     let verdict: JudgeResponse;
 
     try {
-      verdict = JSON.parse(rawText) as JudgeResponse;
+      verdict = JSON.parse(responseText) as JudgeResponse;
     } catch {
       return NextResponse.json(
         {
           error: 'The AI returned a malformed verdict. Please try again.',
-          raw: rawText,
+          raw: responseText,
         },
         { status: 502 }
       );
